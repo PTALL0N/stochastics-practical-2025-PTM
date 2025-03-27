@@ -1,0 +1,107 @@
+clc; close all; clear all; 
+
+
+% Get system dynamic model
+load acdata.mat;
+
+% Definition of the time vector
+dt = 0.05; T  = 60; t = [0:dt:T]; N = length(t);
+nn = zeros(1,N);
+
+% Lateral turbulence input
+v_g = randn(1,N)/sqrt(dt);
+
+% Input vector
+u3 = [nn' nn' v_g'];
+
+% V_g plot
+figure(Position=[200 200 1000 300])
+plot(t,v_g), xlabel('Time [s]',Interpreter='latex',FontSize=12), ylabel('$v_g$ [rad]',Interpreter='latex',FontSize=12);
+
+%% ===================== COMPLETE AIRCRAFT MODEL ==========================
+
+% DEFINE OUTPUT MATRICES FOR ALL STATE VARIABLES
+C = [eye(4),zeros(4,2)];
+% Lateral acceleration equation
+g = zeros(1,size(Ac,2));
+g(4) = 2*V^2/b;
+C11 = g + V*Ac(1,:);
+% Addition of the last row of C
+C = [C;C11];
+
+% Definition of the matrix D
+D = zeros(4, 3); 
+% Addition of the row related to the lateral acceleration
+D11 = V*B(1,:);
+D = [D;D11];
+
+% Response to v_g
+y = lsim(Ac,B,C,D,u3,t);
+
+%% ==================== COMPLETE AIRCRAFT RESULTS =========================
+
+% PLOT RESULTS
+beta_axis = [0 60 -0.07  0.07];
+phi_axis  = [0 60 -0.15  0.15];
+pb_axis   = [0 60 -1e-2  1e-2];
+rb_axis   = [0 60 -1e-2  1e-2];
+
+disp('                                              ')
+disp(' Response to v_g (see figures)                ') 
+subplot(2,1,1); plot(t,y(:,1)); axis(beta_axis); 
+xlabel('time, s'); ylabel('beta [rad]');
+subplot(2,1,2); plot(t,y(:,2)); axis(phi_axis);
+xlabel('time, s'); ylabel('phi [rad]');
+%print -depsc2 -r1200 fig8_17a3
+
+pause
+subplot(2,1,1); plot(t,y(:,3)); axis(pb_axis); 
+xlabel('time, s'); ylabel('pb/2V [rad]');
+subplot(2,1,2); plot(t,y(:,4)); axis(rb_axis);
+xlabel('time, s'); ylabel('rb/2V [rad]');
+%print -depsc2 -r1200 fig8_17b3
+
+pause
+figure
+plot(t,y(:,5));
+xlabel('time, s'); ylabel('ay [m/s^2]');
+
+%% ===================== SIMPLIFIED AIRCRAFT MODEL ========================
+
+% DEFINE OUTPUT MATRICES FOR ALL STATE VARIABLES
+C = [eye(2),zeros(2,6)];
+% Lateral acceleration equation
+g = zeros(1,size(As,1));
+g(2) = 2*V^2/b;
+C11 = g + V*As(1,:);
+% Addition of the last row of C
+C = [C;C11];
+
+% Definition of the matrix D
+D = zeros(2, 5); 
+% Addition of the row related to the lateral acceleration
+D11 = V*Bs(1,:);
+D = [D;D11];
+
+% Response to v_g
+y = lsim(As,Bs,C,D,u3,t);
+
+%% ==================== SIMPLIFIED AIRCRAFT RESULTS =======================
+
+% PLOT RESULTS
+beta_axis = [0 60 -0.07  0.07];
+phi_axis  = [0 60 -0.15  0.15];
+pb_axis   = [0 60 -1e-2  1e-2];
+rb_axis   = [0 60 -1e-2  1e-2];
+
+pause
+subplot(2,1,1); plot(t,y(:,1)); axis(beta_axis); 
+xlabel('Time [s]',Interpreter='latex'); ylabel('$\beta$ [rad]',Interpreter='latex');
+subplot(2,1,2); plot(t,y(:,2)); axis(rb_axis);
+xlabel('Time [s]',Interpreter='latex'); ylabel('rb/2V [rad]',Interpreter='latex');
+%print -depsc2 -r1200 fig8_17a3
+
+pause
+figure
+plot(t,y(:,3));
+xlabel('Time [s]',Interpreter='latex'); ylabel('$a_y$ [m/s$^2$]',Interpreter='latex');

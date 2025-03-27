@@ -1,0 +1,239 @@
+clc; close all; clear all;
+
+load acdata.mat
+
+%% ============ CALCULATIONS OF THE ANALYTICAL PSD FUNCTION ===============
+
+% Define the frequency vector
+w = logspace(-2,2,300);
+
+temp = bode(Ac,B,C(1,:),D(1,:),3,w); Sbeta  = temp.*temp;
+temp = bode(Ac,B,C(2,:),D(2,:),3,w); Sphi   = temp.*temp;
+temp = bode(Ac,B,C(3,:),D(3,:),3,w); Spp    = temp.*temp;
+temp = bode(Ac,B,C(4,:),D(4,:),3,w); Srr    = temp.*temp;
+temp = bode(Ac,B,C(5,:),D(5,:),3,w); Say = temp.*temp;
+
+Sxx  = [Sbeta Sphi Spp Srr Say];
+
+% Create a new figure
+figure('Position', [100, 100, 800, 1000]);
+
+% First subplot: Sbeta (top left)
+subplot(3,2,1); 
+loglog(w, Sbeta,'r--' ,'LineWidth', 1.5); 
+xlabel('$\omega$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12); 
+ylabel('$S_{\beta\beta} [rad$^2$/Hz]$ []', 'Interpreter', 'latex', 'FontSize', 12);
+grid on; grid minor;
+set(gca, 'FontSize', 12);
+
+% Second subplot: Sphi (top right)
+subplot(3,2,2); 
+loglog(w, Sphi,'r--', 'LineWidth', 1.5); 
+xlabel('$\omega$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12); 
+ylabel('$S_{\phi\phi}$ [rad$^2$/Hz]', 'Interpreter', 'latex', 'FontSize', 12);
+grid on; grid minor;
+set(gca, 'FontSize', 12);
+
+% Third subplot: Spp (middle left)
+subplot(3,2,3); 
+loglog(w, Spp,'r--', 'LineWidth', 1.5); 
+xlabel('$\omega$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12); 
+ylabel('$S_{pp}$ [rad$^2$/Hz]', 'Interpreter', 'latex', 'FontSize', 12);
+grid on; grid minor;
+set(gca, 'FontSize', 12);
+
+% Fourth subplot: Srr (middle right)
+subplot(3,2,4); 
+loglog(w, Srr,'r--', 'LineWidth', 1.5); 
+xlabel('$\omega$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12); 
+ylabel('$S_{rr}$ [rad$^2$/Hz]', 'Interpreter', 'latex', 'FontSize', 12);
+grid on; grid minor;
+set(gca, 'FontSize', 12);
+
+% Fifth subplot: Say (bottom, spanning the width of 2 columns)
+f5 = subplot(3,2,[5,6]);
+f5.Position = f5.Position + [+0.04 -0.01 -0.1 0.02];
+loglog(w, Say, 'r--','LineWidth', 1.5); 
+xlabel('$\omega$ [rad/s]', 'Interpreter', 'latex', 'FontSize', 12); 
+ylabel('$S_{a_y a_y} [rad$^2$/Hz]$', 'Interpreter', 'latex', 'FontSize', 12);
+grid on; grid minor;
+set(gca, 'FontSize', 12);
+
+
+temp = bode(As,Bs,Cs(1,:),Ds(1,:),3,w); Sbeta_s  = temp.*temp;
+temp = bode(As,Bs,Cs(2,:),Ds(2,:),3,w); Srr_s   = temp.*temp;
+temp = bode(As,Bs,Cs(3,:),Ds(3,:),3,w); Say_s    = temp.*temp;
+
+Sxx_s  = [Sbeta_s Srr_s Say_s];
+
+% Plot the analytical PSD functions for the simplified model
+figure("Position", [100, 100, 800, 600]);
+subplot(2,3,1); loglog(w,Sbeta_s); xlabel('omega [rad/s]'); ylabel('Sbeta');
+subplot(2,3,2); loglog(w,Srr_s);  xlabel('omega [rad/s]'); ylabel('Srr')
+subplot(2,3,3); loglog(w,Say_s);   xlabel('omega [rad/s]'); ylabel('Say')
+
+
+%% ============ CALCULATIONS OF THE EXPERIMENTAL PSD FUNCTION =============
+
+% SET TIME AXIS
+dt = 0.001; T = 60; t = [0:dt:T]; N = length(t);
+
+% In this case responses to lateral gust vg are calculated (fifth input):
+% no asymmetric vertical and longitudinal turbulence: u_g = w_g = 0.
+v_g = randn(N,1)/sqrt(dt);    % sqrt(dt) because of lsim
+
+nn = zeros(N,1);
+u  = [nn nn nn nn v_g];
+
+% COMPUTE SYSTEM RESPONSE
+y     = lsim(Ac,B,C,D,u,t);
+
+beta  = y(:,1);
+phi   = y(:,2);
+pbtV  = y(:,3);
+rbtV  = y(:,4);
+ay = y(:,5);
+
+% PLOT TIME RESPONSES
+disp('                                                                  ');
+disp('   Aircraft response to atmospheric turbulence                    ');
+title('Aircraft response to atmospheric turbulence                      ');
+clf
+subplot(2,2,1); plot(t,beta); xlabel('time, s'); ylabel('beta');
+grid minor
+subplot(2,2,2); plot(t,phi);  xlabel('time, s'); ylabel('phi');
+grid minor
+subplot(2,2,3); plot(t,pbtV); xlabel('time, s'); ylabel('pb/2V');
+grid minor
+subplot(2,2,4); plot(t,rbtV); xlabel('time, s'); ylabel('rb/2V');
+grid minor
+pause
+
+clf
+title('Beta response to atmospheric turbulence                      ');
+plot(t,ay); xlabel('time, s'); ylabel('ay');
+grid minor
+pause
+
+% COMPUTE PERIODOGRAM AND ESTIMATE PSD
+% PERIODOGRAM
+BETA  = dt*fft(beta);
+PHI   = dt*fft(phi);
+P     = dt*fft(pbtV);
+R     = dt*fft(rbtV);
+Ay = dt*fft(ay);
+
+% PSD ESTIMATE
+Pbeta  = (1/T)*( BETA.*conj(BETA));
+Pphi   = (1/T)*(  PHI.*conj(PHI));
+Pp     = (1/T)*(    P.*conj(P));
+Pr     = (1/T)*(    R.*conj(R));
+Pay = (1/T)*(Ay.*conj(Ay));
+
+PSD_est = [Pbeta,Pphi,Pp,Pr,Pay];
+
+% DEFINE FREQUENCY VECTOR
+fs = 1/dt;                                  % sample frequency
+omega = 2*pi*fs*(0:(N/2)-1)/N;
+
+% PLOT ANALYTIC AND ESTIMATED PSDS IN ONE PLOT
+disp('                                                                  ');
+disp('   Plot analytic and estimated PSD functions                      ');
+title('   Plot analytic and estimated PSD functions                     ');
+clf
+subplot(2,2,1); loglog(w,Sxx(:,1),'--',omega,Pbeta(1:round(N/2)-1)); 
+axis(10.^[-2 2 -12 -2]); xlabel('omega [rad/s]'); ylabel('Sbeta');
+subplot(2,2,2); loglog(w,Sxx(:,2),'--',omega,Pphi(1:round(N/2)-1));
+axis(10.^[-2 2 -12 -2]); xlabel('omega [rad/s]'); ylabel('Sphi')
+subplot(2,2,3); loglog(w,Sxx(:,3),'--',omega,Pp(1:round(N/2)-1));
+axis(10.^[-2 2 -14 -2]); xlabel('omega [rad/s]'); ylabel('Spp')
+subplot(2,2,4); loglog(w,Sxx(:,4),'--',omega,Pr(1:round(N/2)-1));
+axis(10.^[-2 2 -14 -2]); xlabel('omega [rad/s]'); ylabel('Srr')
+grid minor
+
+pause
+
+clf
+title(' PSD for ay                                                   ');
+loglog(w,Sxx(:,5),'--',omega,Pay(1:round(N/2)-1)); 
+xlabel('omega [rad/s]'); ylabel('Say [rad2]')
+legend('Analytic PSD', 'Estimated PSD')
+grid minor
+pause  
+
+
+%% ============ CALCULATIONS OF THE FILTERED PSD FUNCTION =================
+
+% PERIODOGRAM ESTIMATE
+BETA_est  = smoothPhi(BETA);
+PHI_est   = smoothPhi(PHI);
+P_est     = smoothPhi(P);
+R_est     = smoothPhi(R);
+Ay_est = smoothPhi(Ay);
+
+% PSD ESTIMATE
+Pbeta_est  = (1/T)*( BETA_est.*conj(BETA_est));
+Pphi_est   = (1/T)*(  PHI_est.*conj(PHI_est));
+Pp_est     = (1/T)*(    P_est.*conj(P_est));
+Pr_est     = (1/T)*(    R_est.*conj(R_est));
+Pay_est    = (1/T)*(Ay_est.*conj(Ay_est));
+
+% DEFINE FREQUENCY VECTOR
+fs = 1/dt;                                  % sample frequency
+omega = 2*pi*fs*(0:(N/2)-1)/N;
+
+% PLOT ANALYTIC AND ESTIMATED PSDS IN ONE PLOT
+disp('                                                                  ');
+disp('   Plot analytic and estimated PSD functions                      ');
+title('   Plot analytic and estimated PSD functions                     ');
+clf
+subplot(2,2,1); loglog(w,Sxx(:,1),'--',omega,Pbeta_est(1:round(N/2)-1)); 
+axis(10.^[-2 2 -12 -2]); xlabel('omega [rad/s]'); ylabel('Sbeta');
+subplot(2,2,2); loglog(w,Sxx(:,2),'--',omega,Pphi_est(1:round(N/2)-1));
+axis(10.^[-2 2 -12 -2]); xlabel('omega [rad/s]'); ylabel('Sphi')
+subplot(2,2,3); loglog(w,Sxx(:,3),'--',omega,Pp_est(1:round(N/2)-1));
+axis(10.^[-2 2 -14 -2]); xlabel('omega [rad/s]'); ylabel('Spp')
+subplot(2,2,4); loglog(w,Sxx(:,4),'--',omega,Pr_est(1:round(N/2)-1));
+axis(10.^[-2 2 -14 -2]); xlabel('omega [rad/s]'); ylabel('Srr')
+grid minor
+
+pause
+
+clf
+loglog(w,Sxx(:,5),'--',omega,Pay_est(1:round(N/2)-1)); 
+xlabel('omega [rad/s]'); ylabel('Say [rad2]')
+legend('Analytic PSD', 'Estimated PSD SF')
+grid minor
+
+
+PSD_SF = [Pbeta_est,Pphi_est,Pp_est,Pr_est,Pay_est];
+
+
+% Store the results in a .mat
+save("psd_c_ac","Sxx","PSD_est","PSD_SF","w","y")
+
+ 
+function Phi_estimate = smoothPhi(Phi)
+    % Ensure input is a column vector
+    Phi = Phi(:);
+    
+    % Get length of the input vector
+    N = length(Phi);
+    
+    % Initialize output vector
+    Phi_estimate = zeros(size(Phi));
+    
+    % Apply the weighted smoothing formula
+    for k = 1:N
+        if k == 1
+            % First element: use forward difference
+            Phi_estimate(k) = 0.5 * Phi(k) + 0.5 * Phi(k+1);
+        elseif k == N
+            % Last element: use backward difference
+            Phi_estimate(k) = 0.5 * Phi(k) + 0.5 * Phi(k-1);
+        else
+            % General case
+            Phi_estimate(k) = 0.25 * Phi(k-1) + 0.5 * Phi(k) + 0.25 * Phi(k+1);
+        end
+    end
+end
