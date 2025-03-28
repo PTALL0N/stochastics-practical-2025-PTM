@@ -1,6 +1,5 @@
 clc; close all; clear all; 
 
-
 % Get system dynamic model
 load acdata.mat;
 
@@ -14,7 +13,7 @@ v_g = randn(1,N)/sqrt(dt);
 % Input vector
 u3 = [nn' nn' v_g'];
 
-% V_g plot
+% V_g plot (optinal)
 figure(Position=[200 200 1000 300])
 plot(t,v_g), xlabel('Time [s]',Interpreter='latex',FontSize=12), ylabel('$w_2$ [rad]',Interpreter='latex',FontSize=12);
 
@@ -60,7 +59,7 @@ y_s = lsim(As,Bs,Cs,Ds,u3,t);
 %% ==================== COMPLETE AIRCRAFT RESULTS =========================
 % Define axis limits
 beta_axis = [0 60 -0.1  0.1];
-phi_axis  = [0 60 -0.015  0.015];
+phi_axis  = [0 60 -0.05  0.05];
 pb_axis   = [0 60 -5e-3  5e-3];
 rb_axis   = [0 60 -1e-2  1e-2];
 
@@ -98,7 +97,7 @@ plot(t, zeros(1,length(t)),'b', 'LineWidth', 1.2);
 axis(pb_axis);
 ylabel('$\frac{p b}{2V}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
 grid on; grid minor;
-set(gca, 'XTickLabel', []); % Remove x-axis labels
+set(gca, 'XTickLabel', []); 
 
 % Fourth subplot: rb/2V
 subplot(5,1,4); 
@@ -108,9 +107,9 @@ plot(t, y_s(:,2),'b', 'LineWidth', 1.2);
 axis(rb_axis);
 ylabel('$\frac{r b}{2V}$ [rad]', 'Interpreter', 'latex', 'FontSize', 14);
 grid on; grid minor;
-set(gca, 'XTickLabel', []); % Remove x-axis labels
+set(gca, 'XTickLabel', []); 
 
-% Fifth subplot: ay (Only this one has x-axis label)
+% Fifth subplot: ay 
 subplot(5,1,5); 
 plot(t, y(:,5),'r','LineWidth', 1.2); 
 hold on
@@ -120,7 +119,7 @@ ylabel('$a_y$ [m/s$^2$]', 'Interpreter', 'latex', 'FontSize', 14);
 grid on; grid minor;
 
 % Save the figure as a tight PDF
-set(fig, 'PaperPositionMode', 'auto'); % Ensure tight layout
+set(fig, 'PaperPositionMode', 'auto');
 exportgraphics(fig, './Q2plots/timedomainresp.pdf', 'ContentType', 'vector', 'BackgroundColor', 'none');
 
 save("acdata.mat","Ac","B","C","D","As","Bs","Cs","Ds")

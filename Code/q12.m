@@ -17,10 +17,10 @@ plot(real(poles_s), imag(poles_s), 'bx', 'MarkerSize', 10, 'LineWidth', 1);
 yline(0, '--k');
 xline(0, '--k');
 hold off
-xlim([-15 10])
+xlim([-5 5])
 ylim([-8 8])
 grid minor;
-legend('Full model', 'Simplified model', 'Location', 'best',Interpreter='latex',FontSize=11);
+legend('Full model', 'Simplified model', 'Location', 'northwest',Interpreter='latex',FontSize=11);
 xlabel('Real Part',Interpreter='latex',FontSize=12);
 ylabel('Imaginary Part',Interpreter='latex',FontSize=12); 
 axis equal;
@@ -33,85 +33,43 @@ set(fig, 'PaperPositionMode', 'auto'); % Ensure tight layout
 % Save the figure as a tight PDF
 exportgraphics(fig, './Q1plots/poles_plot.pdf', 'ContentType', 'vector', 'BackgroundColor', 'none');
 
-%
-% %%
-% % Plot the system temporal response
-% C = eye(4,10);
-% D = zeros(4,5);
-% sys = ss(A,B,C,D);
-% [y_lat_r,tOut] = impulse(sys);
-% [y_lat_a,tOut_a] = step(sys);
-% [y_eig,tOut_eig] = initial(sys,V(:,1));
-% 
-% 
-% %% Dutch roll response to a impulse in rudder
-% figure("Position", [100, 100, 800, 400]);
-% plot(tOut,y_lat_r(:,2,1))
-% grid minor
-% xlabel('Time [s]', 'Interpreter', 'latex',FontSize=12)
-% ylabel('$\phi$ [deg]', 'Interpreter', 'latex', FontSize=12)
-% ylim([-100 100])
-% 
-% figure("Position", [100, 100, 800, 400]);
-% plot(tOut,y_lat_r(:,1,1))
-% grid minor
-% xlabel('Time [s]', 'Interpreter', 'latex', FontSize=12)
-% ylabel('$\beta$ [deg]', 'Interpreter', 'latex', FontSize=12)
-% ylim([-100 100])
-% figure("Position", [100, 100, 800, 400]);
-% 
-% plot(tOut,y_lat_r(:,3,1))
-% grid minor
-% xlabel('Time [s]', 'Interpreter', 'latex', FontSize=12)
-% ylabel('$\frac{pb}{2V}$ [rad]', 'Interpreter', 'latex', FontSize=12)
-% ylim([-100 100])
-% figure("Position", [100, 100, 800, 400]);
-% 
-% plot(tOut,y_lat_r(:,4,1))
-% grid minor
-% xlabel('Time [s]', 'Interpreter', 'latex', FontSize=12)
-% ylabel('$\frac{rb}{2V}$ [rad]', 'Interpreter', 'latex', FontSize=12)
-% ylim([-100 100])
-% 
-% %% Aperiodic roll
-% figure
-% plot(tOut_eig,y_eig(:,1))
-% grid minor
-% xlabel('Time [s]', 'Interpreter', 'latex', FontSize=12)
-% ylabel('$p$ [deg/s]', 'Interpreter', 'latex', FontSize=12)
-% % ylim([-3 3])
-% 
-% 
-% %%
-
-
-
-
-% Neither the spiral mode, nor the dutch roll are stable. Thus, a
-% controller needs to be designed to comply with stability specifications.
-% In this solution, the MIL-F-8785C have been used as standard, considering
-% a category B (cruise conditions) and a Level 1 of handling qualities.
-
 % The values of the constants as defined 
-Kphi = 0.6;
-Kp = 0.4; 
+Kphi = 0.1;
+Kp = 0.1; 
 K    = [0 Kphi Kp*2*V/b 0  0 0];
 Ac   = A+B(:,1)*K;
 
-% Extract the eigenvalues of the controlled system
-poles_c = eig(Ac);
+% Extract the eigenvalues of both the controlled system (Ac) and another system (As)
+poles_c = eig(Ac); % Controlled system poles
+poles_s = eig(As); % System As poles
 
+% Compute natural frequency and damping ratio for both systems
 omega_n_c = abs(poles_c);
-zeta_c = -real(poles_c)./omega_n_c; 
-mult = omega_n_c.*zeta_c;
-t_5 = log(2)./mult;
+zeta_c = -real(poles_c) ./ omega_n_c;
+mult_c = omega_n_c .* zeta_c;
+t_5_c = log(2) ./ mult_c;
 
-% Create table for display
-pole_table = table(poles, poles_c, omega_n_c, zeta_c, mult, t_5, ...
-     'VariableNames', {'Uncontrolled Poles', 'Controlled Poles', 'Natural Frequency', 'Damping Ratio','NaturalFrequencyDampingRatio', 't_05'});
+omega_n_s = abs(poles_s);
+zeta_s = -real(poles_s) ./ omega_n_s;
+mult_s = omega_n_s .* zeta_s;
 
-% Display table in command window
-disp(pole_table);
+% Create table for controlled system (Ac)
+pole_table_c = table(poles_c, omega_n_c, zeta_c, mult_c, ...
+     'VariableNames', {'Controlled Poles', 'Natural Frequency', 'Damping Ratio', ...
+                       'NaturalFreqDampingRatio'});
+
+% Create table for system As
+pole_table_s = table(poles_s, omega_n_s, zeta_s, mult_s, ...
+     'VariableNames', {'System As Poles', 'Natural Frequency', 'Damping Ratio', ...
+                       'NaturalFreqDampingRatio'});
+
+% Display the tables
+disp('Controlled System (Ac) Poles and Parameters:');
+disp(pole_table_c);
+
+disp('System (As) Poles and Parameters:');
+disp(pole_table_s);
+
 
 % Plot the poles
 fig = figure("Position", [100, 100, 600, 450]);
@@ -120,12 +78,12 @@ hold on
 plot(real(poles), imag(poles), 'rx', 'MarkerSize', 10, 'LineWidth', 1);
 yline(0, '--k');
 xline(0, '--k');
-xlim([-25 5])
+xlim([-5 5])
 ylim([-8 8])
 grid minor;
 xlabel('Real Part',Interpreter='latex',FontSize=12);
 ylabel('Imaginary Part',Interpreter='latex',FontSize=12);
-legend('Controlled poles', 'Uncontrolled poles', 'Location', 'northwest');
+legend('Controlled poles', 'Uncontrolled poles', 'Location', 'northwest',Interpreter='latex',FontSize=11);
 axis equal;
 set(fig, 'PaperPositionMode', 'auto'); % Ensure tight layout
 % Save the figure as a tight PDF
@@ -139,12 +97,12 @@ hold on
 plot(real(poles_s), imag(poles_s), 'bo', 'MarkerSize', 10, 'LineWidth', 1);
 yline(0, '--k');
 xline(0, '--k');
-xlim([-25 5])
+xlim([-5 5])
 ylim([-8 8])
 grid minor;
 xlabel('Real Part',Interpreter='latex',FontSize=12);
 ylabel('Imaginary Part',Interpreter='latex',FontSize=12);
-legend('Controlled full model', 'Controlled simplified model', 'Location', 'northwest');
+legend('Controlled full model', 'Controlled simplified model', 'Location', 'northwest',Interpreter='latex',FontSize=11);
 axis equal;
 set(fig, 'PaperPositionMode', 'auto'); % Ensure tight layout
 % Save the figure as a tight PDF

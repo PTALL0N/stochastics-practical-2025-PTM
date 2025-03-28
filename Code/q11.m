@@ -1,46 +1,45 @@
 clear, clc, close all;
 
-% AIRCRAFT- AND FLIGHT CONDITION 'CRUISE'.
-V   = 181.9; % ok
-S   = 24.2; % ok
-b   = 13.36; % ok
-mub = 32; % ok
-KX2 = 0.013; % ok
-KZ2 = 0.037; % ok
-KXZ = 0.002; % ok
+% Aircraft and flight condition parameters
+V   = 181.9;
+S   = 24.2;
+b   = 13.36; 
+mub = 32; 
+KX2 = 0.013; 
+KZ2 = 0.037;
+KXZ = 0.002;
+
 % Calculations for cruise conditions
-W = 53361; % ok
-rho = 0.4587; % ok
-q = 0.5*rho*V; % ok
-CL  = W/(q*S); % ok
+W = 53361;
+rho = 0.4587;
+q = 0.5*rho*V^2;
+CL  = W/(q*S);
 
 % TURBULENCE PARAMETERS APPROXIMATED POWER SPECTRAL DENSITIES
-Lg        = 150; % ok
-B         = b/(2*Lg); % ok
-sigma     = 2; % ok
+Lg        = 150;
+B         = b/(2*Lg);
+sigma     = 2; 
 sigmaug_V = sigma/V;
 sigmavg   = sigma;
 sigmabg   = sigmavg/V;
 sigmaag   = sigma/V;
 
-% Values depend on B and are in tables of the lecture notes
-Iug0 = 0.0249*sigmaug_V^2; % ok
-Iag0 = 0.0182*sigmaag^2; % ok
-tau1 = 0.0991;     tau2 = 0.5545;     tau3 = 0.4159; % ok
-tau4 = 0.0600;     tau5 = 0.3294;     tau6 = 0.2243; % ok
 
-% AIRCRAFT ASYMMETRIC AERODYNAMIC DERIVATIVES 
-CYb  =-1.4900;     Clb  =-0.1240;     Cnb  = 0.1865; % ok
-CYp  =-0.1450;     Clp  =-0.4344;     Cnp  = 0.0135; % ok
-CYr  = 0.4300;     Clr  = 0.1550;     Cnr  =-0.1930; % ok
-CYda = 0.0000;     Clda =-0.2108;     Cnda = 0.0031; % ok
-CYdr = 0.3037;     Cldr = 0.0469;     Cndr =-0.1261; % ok
+Iug0 = 0.0249*sigmaug_V^2; 
+Iag0 = 0.0182*sigmaag^2; 
+tau1 = 0.0991;     tau2 = 0.5545;     tau3 = 0.4159; 
+tau4 = 0.0600;     tau5 = 0.3294;     tau6 = 0.2243; 
+
+% Aircraft asymmetric derivatives
+CYb  =-1.4900;     Clb  =-0.1240;     Cnb  = 0.1865; 
+CYp  =-0.1450;     Clp  =-0.4344;     Cnp  = 0.0135; 
+CYr  = 0.4300;     Clr  = 0.1550;     Cnr  =-0.1930; 
+CYda = 0.0000;     Clda =-0.2108;     Cnda = 0.0031; 
+CYdr = 0.3037;     Cldr = 0.0469;     Cndr =-0.1261; 
  
-                   % No info on the slides to extract this values
                    Clpw = 0.8*Clp;    Cnpw = 0.9*Cnp;
                    Clrw = 0.7*Clr;    Cnrw = 0.2*Cnr;
 
-% Simplification included in lecturenotes p.343
 CYfb = 0;
 Clfb = 0;
 Cnfb = 0;
